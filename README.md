@@ -4,7 +4,7 @@ Herramienta avanzada en Python para automatizar conexiones anónimas mediante TO
 
 ---
 
-# Características
+# Características de la herramienta
 
 - Rotación automática de IP TOR
 - Selección de país de salida
