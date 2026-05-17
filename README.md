@@ -128,9 +128,17 @@ Probado en:
 
 # Capturas
 
-```markdown
-![menu](screenshots/menu.png)
-```
+![menu](/tor-vpn-anonymity/Imágenes/menu.png)
+
+
+![menu](/tor-vpn-anonymity/Imágenes/menudos.png)
+
+
+![menu](/tor-vpn-anonymity/Imágenes/menutres.png)
+
+
+![menu](/tor-vpn-anonymity/Imágenes/ipcambio.png)
+
 
 ---
 
@@ -141,19 +149,48 @@ Esta herramienta fue desarrollada únicamente con fines educativos, privacidad y
 El usuario es responsable del uso que le dé al software.
 
 ---
+Flujo de Operación Interna
 
-# Mejoras recomendadas
+El script opera de manera modular siguiendo estrictamente el siguiente esquema de seguridad:
 
-- Validación de conexión TOR
-- Detección de fugas DNS
-- Verificación automática de servicio TOR
-- Configuración separada usando:
-  
-```bash
-/etc/tor/torrc.d/custom.conf
-```
+[Inicio] -> [Verificación de Root] -> [Comprobación de Dependencias (Tor/Curl)]
+   │
+   ▼
+[Menús Interactivos: Selección de País, Puerto Socks5, Navegador e Intervalo]
+   │
+   ▼
+[Modificación en caliente de /etc/tor/torrc] -> [Reinicio Seguro del Servicio Tor]
+   │
+   ▼
+[Limpieza de candados (.parentlock) y Forzado de Cierre de Instancias Previas]
+   │
+   ▼
+[Lanzamiento del Navegador Aislado (Como Usuario No-Root / Desvío de Errores)]
+   │
+   ▼
+[Bucle de Monitoreo Dinámico: Impresión de Métricas Adaptativas y Rotación de IP]
 
-- Soporte para proxies encadenados
-- Verificación de fingerprint del navegador
+# Arquitectura Técnica y Métodos Críticos
+
+1. Desescalado de Privilegios Seguro (abrir_navegador)
+
+Ejecutar interfaces gráficas o navegadores web como el usuario root rompe las reglas básicas de la seguridad informática. El script soluciona esto detectando el entorno real mediante os.getenv("SUDO_USER"). Al invocar el subproceso, el navegador se aísla por completo:
+Python
+
+subprocess.Popen(["sudo", "-u", usuario_real, nav, ...])
+
+2. Rompimiento de Candados de Perfil (.parentlock)
+
+Cuando Firefox se cierra bruscamente, deja un archivo de bloqueo en la carpeta del perfil temporal. La próxima vez que intentes abrirlo, arrojará el error "Firefox is already running". El script previene esto de raíz limpiando este archivo antes de inicializar la ventana:
+Python
+
+lock_file = os.path.join(perfil_temp, ".parentlock")
+if os.path.exists(lock_file):
+    os.remove(lock_file)
+
+3. Rotación de Circuitos mediante Sockets (nueva_identidad)
+
+En lugar de reiniciar el demonio de TOR completo (lo que causaría pérdidas de conexión de más de 10 segundos), el script interactúa directamente por sockets TCP con el puerto de control seguro (9051) inyectando la instrucción de red en caliente SIGNAL NEWNYM. Esto invalida los nodos previos y construye rutas limpias instantáneamente.
+4. Supresión de Logs de D-Bus y GTK
 
 ---
