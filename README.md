@@ -128,16 +128,16 @@ Probado en:
 
 # Capturas
 
-![menu](/tor-vpn-anonymity/Imágenes/menu.png)
+![menu](Imágenes/menu.png)
 
 
-![menu](/tor-vpn-anonymity/Imágenes/menudos.png)
+![menu](Imágenes/menudos.png)
 
 
-![menu](/tor-vpn-anonymity/Imágenes/menutres.png)
+![menu](Imágenes/menutres.png)
 
 
-![menu](/tor-vpn-anonymity/Imágenes/ipcambio.png)
+![menu](Imágenes/ipcambio.png)
 
 
 ---
