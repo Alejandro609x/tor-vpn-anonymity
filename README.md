@@ -1,30 +1,61 @@
+![menu](Imágenes/menu.png)
+
+![menu](Imágenes/menudos.png)
+
+![menu](Imágenes/menutres.png)
+
+![menu](Imágenes/ipcambio.png)
+
+---
+
 # TOR VPN ANONYMITY
 
 Herramienta avanzada en Python para automatizar conexiones anónimas mediante TOR, rotación automática de IPs y lanzamiento de navegadores privados usando SOCKS5.
 
 ---
 
-# Características de la herramienta
+# Características
 
-- Rotación automática de IP TOR
-- Selección de país de salida
-- Compatibilidad con Firefox y Chromium
-- Configuración automática de TOR
-- Detección de IP real y IP TOR
-- Interfaz visual en terminal
-- Soporte para múltiples puertos SOCKS5
-- Modo privado/incógnito automático
-- Reinicio automático de circuitos TOR
-- Compatible con Linux/Kali/Debian/Ubuntu
+* Rotación automática de IP TOR
+* Selección de país de salida
+* Compatibilidad con Firefox y Chromium
+* Configuración automática de TOR
+* Detección de IP real y IP TOR
+* Interfaz visual en terminal
+* Soporte para múltiples puertos SOCKS5
+* Modo privado/incógnito automático
+* Reinicio automático de circuitos TOR
+* Limpieza automática de perfiles temporales
+* Supresión de errores D-Bus/GTK
+* Desescalado seguro de privilegios
+* Compatible con Linux/Kali/Debian/Ubuntu
 
 ---
 
 # Requisitos
 
-- Python 3
-- TOR
-- curl
-- Firefox ESR o Chromium
+Antes de ejecutar la herramienta asegúrate de tener instalados:
+
+* Python 3
+* TOR
+* curl
+* Firefox ESR o Chromium
+
+## Instalación rápida de dependencias
+
+### Debian / Ubuntu / Kali / Parrot
+
+```bash
+sudo apt update
+
+sudo apt install -y \
+tor \
+curl \
+python3 \
+python3-pip \
+firefox-esr \
+chromium
+```
 
 ---
 
@@ -42,12 +73,13 @@ git clone https://github.com/Alejandro609x/tor-vpn-anonymity.git
 cd tor-vpn-anonymity
 ```
 
-## Dar permisos
+## Dar permisos de ejecución
 
 ```bash
 chmod +x tor_anonymity.py
 ```
-No es muy necesario, ya que se tiene que ejecutar con sudo
+
+Aunque el script normalmente se ejecuta con `sudo`, otorgar permisos puede facilitar la ejecución directa.
 
 ---
 
@@ -67,51 +99,219 @@ sudo ./tor_anonymity.py
 
 ---
 
-# Funcionamiento
+# Flujo de Funcionamiento
 
-1. Selecciona el país de salida TOR
-2. Selecciona el puerto SOCKS5
-3. Selecciona navegador
-4. Configura intervalo de rotación
-5. El script reinicia TOR automáticamente
-6. Se abre el navegador en modo privado
-7. TOR rota la IP automáticamente
+El script sigue automáticamente el siguiente proceso:
+
+```text
+[Inicio]
+   │
+   ▼
+[Verificación de privilegios ROOT]
+   │
+   ▼
+[Comprobación de dependencias]
+(TOR / Curl / Navegador)
+   │
+   ▼
+[Selección interactiva]
+- País
+- Puerto SOCKS5
+- Navegador
+- Intervalo de rotación
+   │
+   ▼
+[Modificación dinámica de /etc/tor/torrc]
+   │
+   ▼
+[Reinicio seguro del servicio TOR]
+   │
+   ▼
+[Limpieza de perfiles y candados]
+(.parentlock)
+   │
+   ▼
+[Lanzamiento aislado del navegador]
+(usuario no-root)
+   │
+   ▼
+[Monitoreo y rotación automática]
+de circuitos TOR
+```
 
 ---
 
-# Países disponibles
+# Funciones Principales
 
-- Alemania
-- Estados Unidos
-- Japón
-- Francia
-- Canadá
-- España
-- Brasil
-- México
-- Países Bajos
+## Selección de País de Salida
 
-Nota: Si quieres rotar IP cada cierto tiempo hay paises mejores que otros. 
+La herramienta permite forzar nodos de salida TOR mediante modificación dinámica de:
 
----
+```bash
+/etc/tor/torrc
+```
 
-# Puertos compatibles
+Ejemplo:
 
-- 9050
-- 9150
-- Personalizado (Puede darte error ya que depende de tus puertos)
+```bash
+ExitNodes {DE}
+StrictNodes 1
+```
 
 ---
 
-# Rotación de IP
+# Países Disponibles
 
-El script puede rotar automáticamente:
+| País           | Código |
+| -------------- | ------ |
+| Alemania       | DE     |
+| Estados Unidos | US     |
+| Japón          | JP     |
+| Francia        | FR     |
+| Canadá         | CA     |
+| España         | ES     |
+| Brasil         | BR     |
+| México         | MX     |
+| Países Bajos   | NL     |
 
-- Cada 1 minuto
-- Cada 5 minutos
-- Cada 10 minutos
-- Cada 30 minutos
-- Estático
+---
+
+# Puertos SOCKS5 Compatibles
+
+* 9050
+* 9150
+* Personalizado
+
+> El uso de puertos personalizados depende de la configuración local de TOR.
+
+---
+
+# Rotación Automática de IP
+
+La herramienta puede rotar automáticamente:
+
+* Cada 1 minuto
+* Cada 5 minutos
+* Cada 10 minutos
+* Cada 30 minutos
+* Modo estático
+
+La rotación se realiza sin reiniciar completamente TOR utilizando:
+
+```text
+SIGNAL NEWNYM
+```
+
+sobre el puerto de control `9051`.
+
+---
+
+# Arquitectura Técnica
+
+# 1. Desescalado Seguro de Privilegios
+
+Ejecutar navegadores como ROOT es una mala práctica de seguridad.
+
+El script detecta automáticamente el usuario real:
+
+```python
+usuario_real = os.getenv("SUDO_USER")
+```
+
+y lanza el navegador aislado:
+
+```python
+subprocess.Popen([
+    "sudo", "-u", usuario_real, nav
+])
+```
+
+Esto evita:
+
+* Corrupción de perfiles
+* Riesgos de seguridad
+* Bloqueos de Firefox/Chromium
+
+---
+
+# 2. Limpieza de Candados `.parentlock`
+
+Firefox deja archivos de bloqueo cuando se cierra abruptamente.
+
+El script elimina automáticamente:
+
+```python
+lock_file = os.path.join(perfil_temp, ".parentlock")
+
+if os.path.exists(lock_file):
+    os.remove(lock_file)
+```
+
+Esto previene:
+
+```text
+Firefox is already running
+```
+
+---
+
+# 3. Rotación de Circuitos TOR
+
+En lugar de reiniciar el demonio completo:
+
+```bash
+systemctl restart tor
+```
+
+la herramienta usa sockets TCP para interactuar directamente con TOR:
+
+```python
+SIGNAL NEWNYM
+```
+
+Ventajas:
+
+* Menor tiempo de espera
+* Reconstrucción instantánea de circuitos
+* Menor pérdida de conexión
+* Mayor estabilidad
+
+---
+
+# 4. Supresión de Logs D-Bus y GTK
+
+Firefox y Chromium generan múltiples mensajes innecesarios en terminal:
+
+```text
+Gtk-WARNING
+dbus-daemon
+```
+
+La herramienta redirige automáticamente estos errores:
+
+```python
+stderr=subprocess.DEVNULL
+stdout=subprocess.DEVNULL
+```
+
+manteniendo la terminal limpia.
+
+---
+
+# 5. Verificación de IP Pública
+
+La herramienta compara:
+
+* IP real
+* IP TOR
+
+Utilizando:
+
+```bash
+curl ifconfig.me
+```
+
+o servicios equivalentes.
 
 ---
 
@@ -119,78 +319,126 @@ El script puede rotar automáticamente:
 
 Probado en:
 
-- Kali Linux
-- Debian
-- Ubuntu
-- Parrot OS
+* Kali Linux
+* Debian
+* Ubuntu
+* Parrot OS
+
+---
+
+# Seguridad
+
+La herramienta:
+
+* No almacena logs
+* No guarda historial
+* Usa perfiles temporales
+* Elimina residuos de sesión
+* Aísla navegadores automáticamente
 
 ---
 
 # Capturas
 
-![menu](Imágenes/menu.png)
+## Menú Principal
 
+```text
+[1] Seleccionar País
+[2] Seleccionar Puerto SOCKS5
+[3] Navegador
+[4] Rotación de IP
+[5] Iniciar TOR
+```
 
-![menu](Imágenes/menudos.png)
+## Monitoreo de IP
 
+```text
+IP REAL : XXX.XXX.XXX.XXX
+IP TOR  : XXX.XXX.XXX.XXX
+ESTADO  : ANÓNIMO
+```
 
-![menu](Imágenes/menutres.png)
+---
 
+# Ejemplo de Configuración TOR
 
-![menu](Imágenes/ipcambio.png)
-
+```bash
+SOCKSPort 9050
+ControlPort 9051
+CookieAuthentication 1
+```
 
 ---
 
-# Advertencia
+# Posibles Errores
 
-Esta herramienta fue desarrollada únicamente con fines educativos, privacidad y pruebas de anonimato.
+## TOR no iniciado
 
-El usuario es responsable del uso que le dé al software.
+```text
+ERROR: TOR service not running
+```
 
----
-Flujo de Operación Interna
+Solución:
 
-El script opera de manera modular siguiendo estrictamente el siguiente esquema de seguridad:
-
-[Inicio] -> [Verificación de Root] -> [Comprobación de Dependencias (Tor/Curl)]
-   │
-   ▼
-[Menús Interactivos: Selección de País, Puerto Socks5, Navegador e Intervalo]
-   │
-   ▼
-[Modificación en caliente de /etc/tor/torrc] -> [Reinicio Seguro del Servicio Tor]
-   │
-   ▼
-[Limpieza de candados (.parentlock) y Forzado de Cierre de Instancias Previas]
-   │
-   ▼
-[Lanzamiento del Navegador Aislado (Como Usuario No-Root / Desvío de Errores)]
-   │
-   ▼
-[Bucle de Monitoreo Dinámico: Impresión de Métricas Adaptativas y Rotación de IP]
-
-# Arquitectura Técnica y Métodos Críticos
-
-1. Desescalado de Privilegios Seguro (abrir_navegador)
-
-Ejecutar interfaces gráficas o navegadores web como el usuario root rompe las reglas básicas de la seguridad informática. El script soluciona esto detectando el entorno real mediante os.getenv("SUDO_USER"). Al invocar el subproceso, el navegador se aísla por completo:
-Python
-
-subprocess.Popen(["sudo", "-u", usuario_real, nav, ...])
-
-2. Rompimiento de Candados de Perfil (.parentlock)
-
-Cuando Firefox se cierra bruscamente, deja un archivo de bloqueo en la carpeta del perfil temporal. La próxima vez que intentes abrirlo, arrojará el error "Firefox is already running". El script previene esto de raíz limpiando este archivo antes de inicializar la ventana:
-Python
-
-lock_file = os.path.join(perfil_temp, ".parentlock")
-if os.path.exists(lock_file):
-    os.remove(lock_file)
-
-3. Rotación de Circuitos mediante Sockets (nueva_identidad)
-
-En lugar de reiniciar el demonio de TOR completo (lo que causaría pérdidas de conexión de más de 10 segundos), el script interactúa directamente por sockets TCP con el puerto de control seguro (9051) inyectando la instrucción de red en caliente SIGNAL NEWNYM. Esto invalida los nodos previos y construye rutas limpias instantáneamente.
-4. Supresión de Logs de D-Bus y GTK
+```bash
+sudo systemctl start tor
+```
 
 ---
+
+## Puerto ocupado
+
+```text
+Address already in use
+```
+
+Verificar:
+
+```bash
+sudo lsof -i :9050
+```
+
+---
+
+## Firefox bloqueado
+
+```text
+Firefox is already running
+```
+
+La herramienta elimina automáticamente `.parentlock`, pero también puedes ejecutar:
+
+```bash
+pkill firefox
+```
+
+---
+
+# Recomendaciones
+
+* Utilizar Firefox ESR
+* No maximizar ventanas
+* Evitar instalar extensiones
+* No iniciar sesión en cuentas personales
+* Usar resoluciones aleatorias
+* Rotar nodos periódicamente
+
+---
+
+# Advertencia Legal
+
+Esta herramienta fue desarrollada únicamente con fines:
+
+* Educativos
+* Investigación
+* Privacidad
+* Pruebas de anonimato
+
+El usuario es completamente responsable del uso que le dé al software.
+
+---
+
+# Repositorio
+
+[tor-vpn-anonymity GitHub Repository](https://github.com/Alejandro609x/tor-vpn-anonymity?utm_source=chatgpt.com)
+
